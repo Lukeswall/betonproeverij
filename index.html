@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Betonproeverij - Gangster Koala Parkour</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Three.js and OrbitControls / PointerLock -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- 3D Canvas Container -->
+  <div id="game-container"></div>
+
+  <!-- Comic UI Overlay -->
+  <div id="ui-layer">
+    <!-- Top Bar: Objective, Compass & Stealth -->
+    <div class="hud-top">
+      <div class="hud-card title-card">
+        <span class="game-tag">BETONPROEVERIJ</span>
+        <div class="mission-text">🎯 Bereik de Betonnen Uitkijktoren!</div>
+      </div>
+
+      <div class="compass-container">
+        <div class="compass-label">KOMPAS NAAR FINISH</div>
+        <div id="compass-arrow">▲</div>
+        <div id="distance-display">120m</div>
+      </div>
+
+      <div class="hud-card status-card">
+        <div class="status-row">
+          <span class="label">STATUS:</span>
+          <span id="stealth-indicator" class="badge badge-normal">ZICHTBAAR</span>
+        </div>
+        <div class="status-row">
+          <span class="label">SUGAR RUSH:</span>
+          <div class="meter-bar"><div id="rush-meter" style="width: 0%;"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alert / Detection Indicator -->
+    <div id="alarm-box" class="alarm-banner hidden">
+      🚨 DIERENVANGERS ALARMEERD! WEGWEZEN! 🚨
+    </div>
+
+    <!-- Comic Floating Text Container -->
+    <div id="comic-popups"></div>
+
+    <!-- Bush Overlay (Vignette when hiding) -->
+    <div id="bush-vignette" class="hidden"></div>
+
+    <!-- Bottom Controls & Stats -->
+    <div class="hud-bottom">
+      <div class="hud-pill">
+        <span>🐾 <b>WASD</b> Lopen</span>
+        <span>⚡ <b>SHIFT</b> Sprinten</span>
+        <span>🦘 <b>SPATIE</b> Springen / Bomen Afzetten</span>
+        <span>🌳 <b>TEGEN BOOM</b> Klimmen</span>
+        <span>🌭 <b>KRAAM</b> Eten Jatten (Speedboost)</span>
+      </div>
+      <div class="score-pill">
+        <span>Gevonden Snacks: <b id="snacks-count">0</b>/5</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Crosshair / Reticle for 3rd Person aiming -->
+  <div id="crosshair"></div>
+
+  <!-- Start Screen Overlay -->
+  <div id="start-screen" class="overlay-screen">
+    <div class="comic-modal">
+      <div class="comic-header">
+        <div class="subtitle">OUTLAW KOALA EDITION</div>
+        <h1 class="main-title">BETONPROEVERIJ</h1>
+        <div class="badge-row">
+          <span class="comic-tag tag-red">3D PARKOUR</span>
+          <span class="comic-tag tag-yellow">STEALTH</span>
+          <span class="comic-tag tag-blue">COMIC ACTION</span>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <div class="story-box">
+          <p>
+            Jij bent <b>Kees de Koala</b> met de beruchte gangsterbril. Je bent ontsnapt uit het betonnen stadspark en zoekt een weg over de daken en rotsen naar de <b>Gouden Eucalyptustoren</b>!
+          </p>
+          <div class="rules-grid">
+            <div class="rule-item">
+              <span class="rule-icon">🌳</span>
+              <div><b>Klim in Bomen:</b> Ren tegen een stam om omhoog te klauteren. Druk op <b>SPATIE</b> voor een mega-sprong naar de volgende boom!</div>
+            </div>
+            <div class="rule-item">
+              <span class="rule-icon">🌿</span>
+              <div><b>Verstop in Struiken:</b> Loop door dichte bosjes om onzichtbaar te worden voor dierenvangers.</div>
+            </div>
+            <div class="rule-item">
+              <span class="rule-icon">🌭</span>
+              <div><b>Jat Snacks:</b> Eetkramen geven je een tijdelijke <i>Sugar Rush</i> turbo boost!</div>
+            </div>
+            <div class="rule-item">
+              <span class="rule-icon">👮</span>
+              <div><b>Ontwijk de Mensen:</b> Dierenvangers met netten, politie en dierverzorgers willen je oppakken!</div>
+            </div>
+          </div>
+        </div>
+
+        <button id="btn-start" class="btn-comic-primary">
+          KLIK OM TE STARTEN! 🕹️
+        </button>
+        <p class="mouse-hint">Gebruik je <b>muis</b> om rond te kijken (Pointer Lock). Druk op <b>ESC</b> om te pauzeren.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Over Screen -->
+  <div id="gameover-screen" class="overlay-screen hidden">
+    <div class="comic-modal modal-danger">
+      <h1 class="comic-stamp stamp-red">GEPAKT!</h1>
+      <p id="gameover-reason">De dierenvangers hebben je in een kooitje gestopt!</p>
+      <button id="btn-restart" class="btn-comic-primary">OPNIEUW PROBEREN 🔄</button>
+    </div>
+  </div>
+
+  <!-- Victory Screen -->
+  <div id="victory-screen" class="overlay-screen hidden">
+    <div class="comic-modal modal-win">
+      <h1 class="comic-stamp stamp-green">BETON OVERWONNEN! 🏆</h1>
+      <p>Kees de Koala heeft de top bereikt en chillt met zijn gangsterbril op de Eucalyptustoren!</p>
+      <div id="victory-stats" class="victory-stats"></div>
+      <button id="btn-play-again" class="btn-comic-primary">NOG EEN KEER SPELEN 🎉</button>
+    </div>
+  </div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
